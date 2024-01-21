@@ -1,19 +1,16 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
-import 'package:email_validator/email_validator.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:provider/provider.dart';
+
+import 'package:email_validator/email_validator.dart';
+import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:vendor_side_app/provider/auth_provier.dart';
-import 'package:vendor_side_app/provider/location_provider.dart';
 import 'package:vendor_side_app/screens/LoginScreen.dart';
 import 'package:vendor_side_app/screens/profile/profile_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
-  SignUpScreen({Key? key}) : super(key: key);
+  const SignUpScreen({super.key});
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -21,10 +18,10 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formkey = GlobalKey<FormState>();
-  AuthProvider _authProvider = AuthProvider();
+  final AuthProvider _authProvider = AuthProvider();
 
   bool _isPasswordVisible = true;
-  late bool _ispicAvail = false;
+  final bool _ispicAvail = false;
   String downloadurl = "";
   String loc = "";
   String address = "";
@@ -37,13 +34,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
   File? _selectedImage;
 
   bool _isconfirmPasswordVisible = true;
-  var _nameTextController = TextEditingController();
+  final _nameTextController = TextEditingController();
   final _emailTextController = TextEditingController();
   final _phoneTextController = TextEditingController();
   final _passwordTextController = TextEditingController();
   final _addressTextController = TextEditingController();
   final _confirmPasswordTextController = TextEditingController();
-  TextEditingController _imageFileNameController = TextEditingController();
+  final TextEditingController _imageFileNameController =
+      TextEditingController();
 
   Future<void> _pickImage() async {
     final imagePicker = ImagePicker();
@@ -120,7 +118,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       child: Form(
                         key: _formkey,
                         child: Container(
-                          padding: EdgeInsets.symmetric(vertical: 20),
+                          padding: const EdgeInsets.symmetric(vertical: 20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -156,14 +154,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     if (value!.isEmpty) {
                                       return "Enter Email-Id";
                                     }
-                                    final bool _isValid =
+                                    final bool isValid =
                                         EmailValidator.validate(
                                             _emailTextController.text);
-                                    if (!_isValid) {
+                                    if (!isValid) {
                                       return "Enter a Valid Email-Id";
                                     }
                                     setState(() {
-                                      _emailTextController.text = value;
+                                      email = _emailTextController.text;
                                     });
                                     return null;
                                   },
@@ -213,17 +211,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     if (value!.isEmpty) {
                                       return "Enter Your Password";
                                     }
-                                    if (value.length != 6) {
+                                    if (value.length < 6) {
                                       return "Password Must be Greater then 6 Character";
                                     }
                                     return null;
                                   },
                                   obscureText: _isconfirmPasswordVisible,
                                   decoration: InputDecoration(
-                                    prefixIcon: Icon(Icons.fingerprint),
+                                    prefixIcon: const Icon(Icons.fingerprint),
                                     labelText: "Password",
                                     hintText: "Password",
-                                    border: OutlineInputBorder(),
+                                    border: const OutlineInputBorder(),
                                     suffixIcon: IconButton(
                                       icon: Icon(
                                         _isconfirmPasswordVisible
@@ -265,10 +263,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   obscureText:
                                       !_isPasswordVisible, // Note the change here
                                   decoration: InputDecoration(
-                                    prefixIcon: Icon(Icons.fingerprint),
+                                    prefixIcon: const Icon(Icons.fingerprint),
                                     labelText: "Re-Enter Password",
                                     hintText: "Re-Enter Password",
-                                    border: OutlineInputBorder(),
+                                    border: const OutlineInputBorder(),
                                     suffixIcon: IconButton(
                                       icon: Icon(
                                         _isPasswordVisible
@@ -322,7 +320,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                               Icons.location_searching)),
                                       labelText: "Bunk Address",
                                       hintText: "Bunk Address",
-                                      border: OutlineInputBorder()),
+                                      border: const OutlineInputBorder()),
                                 ),
                               ),
                               const SizedBox(
@@ -345,7 +343,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                               Icons.add_circle_outline_sharp)),
                                       labelText: "Bunk Image",
                                       hintText: "Bunk Image",
-                                      border: OutlineInputBorder()),
+                                      border: const OutlineInputBorder()),
                                   readOnly: true,
                                   controller: _imageFileNameController,
                                 ),
@@ -360,7 +358,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    SizedBox(
+                    const SizedBox(
                       height: 15,
                     ),
                     SizedBox(
@@ -368,42 +366,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       height: 45,
                       child: ElevatedButton(
                         onPressed: () {
-                          if (_ispicAvail == true) {
-                            if (_formkey.currentState!.validate()) {
-                              _authProvider
-                                  .registerSeller(
-                                      email, password, _selectedImage)
-                                  .then(
-                                (crede) async {
-                                  if (crede.user?.uid != null) {
-                                    // _authProvider
-                                    await _authProvider
-                                        .savaVendorDataOnDb(
-                                            url: downloadurl,
-                                            shopName: shopname,
-                                            shopno: shopno,
-                                            shopaddess: address,
-                                            latitude: lat,
-                                            longitude: longt)
-                                        .then(
-                                      (value) {
-                                        Navigator.pushReplacementNamed(
-                                            context, profile_screen.id);
-                                      },
-                                    );
-                                  }
-                                },
-                              );
-                            }
+                          if (_formkey.currentState!.validate()) {
+                            _authProvider
+                                .registerSeller(email, password, _selectedImage)
+                                .then(
+                              (crede) async {
+                                if (crede.user?.uid != null) {
+                                  // _authProvider
+                                  await _authProvider
+                                      .savaVendorDataOnDb(
+                                          url: downloadurl,
+                                          shopName: shopname,
+                                          shopno: shopno,
+                                          shopaddess: address,
+                                          latitude: lat,
+                                          longitude: longt)
+                                      .then(
+                                    (value) {
+                                      Navigator.pushReplacementNamed(
+                                          context, profile_screen.id);
+                                    },
+                                  );
+                                }
+                              },
+                            );
                           }
                         },
-                        child: Text(
+                        child: const Text(
                           'REGISTER',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       height: 7.5,
                     ),
                     const Text("- OR -"),
