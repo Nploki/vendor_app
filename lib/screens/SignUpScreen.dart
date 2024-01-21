@@ -7,7 +7,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:vendor_side_app/provider/auth_provier.dart';
 import 'package:vendor_side_app/screens/LoginScreen.dart';
-import 'package:vendor_side_app/screens/profile/profile_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -161,7 +160,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       return "Enter a Valid Email-Id";
                                     }
                                     setState(() {
-                                      email = _emailTextController.text;
+                                      email = _emailTextController.text = value;
                                     });
                                     return null;
                                   },
@@ -365,31 +364,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       width: double.infinity,
                       height: 45,
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           if (_formkey.currentState!.validate()) {
-                            _authProvider
-                                .registerSeller(email, password, _selectedImage)
-                                .then(
-                              (crede) async {
-                                if (crede.user?.uid != null) {
-                                  // _authProvider
-                                  await _authProvider
-                                      .savaVendorDataOnDb(
-                                          url: downloadurl,
-                                          shopName: shopname,
-                                          shopno: shopno,
-                                          shopaddess: address,
-                                          latitude: lat,
-                                          longitude: longt)
-                                      .then(
-                                    (value) {
-                                      Navigator.pushReplacementNamed(
-                                          context, profile_screen.id);
-                                    },
-                                  );
-                                }
-                              },
-                            );
+                            try {
+                              await _authProvider.registerSeller(
+                                  email, password, _selectedImage);
+                              await _authProvider.savaVendorDataOnDb(
+                                  url: downloadurl,
+                                  shopName: shopname,
+                                  shopno: shopno,
+                                  shopaddess: address,
+                                  latitude: lat,
+                                  longitude: longt);
+                            } catch (e) {
+                              print("$e");
+                            }
                           }
                         },
                         child: const Text(

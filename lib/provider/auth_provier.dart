@@ -14,20 +14,18 @@ class AuthProvider with ChangeNotifier {
   String error = '';
   bool isPicAvail = false;
 
-  Future<UserCredential> registerSeller(
+  Future<void> registerSeller(
       String email, String password, File? selectedImage) async {
     notifyListeners();
     try {
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
 
-      if (userCredential.user?.uid != null && selectedImage != null) {
-        String imageUrl = (await uploadFile(selectedImage,
-            'Uploads/showProfilePic/${userCredential.user!.uid}')) as String;
-        // Save imageUrl or perform further actions as needed
-      }
-
-      return userCredential;
+      // if (userCredential.user?.uid != null && selectedImage != null) {
+      //   String imageUrl = (await uploadFile(selectedImage,
+      //       'Uploads/showProfilePic/${userCredential.user!.uid}')) as String;
+      //   // Save imageUrl or perform further actions as needed
+      // }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         error = 'Password is too weak';
@@ -57,6 +55,11 @@ class AuthProvider with ChangeNotifier {
     } on FirebaseException catch (e) {
       print(e.code);
       rethrow; // Rethrow to handle the error in the calling function
+    } catch (e) {
+      error = e.toString();
+      notifyListeners();
+      print(e);
+      rethrow;
     }
   }
 
@@ -126,7 +129,7 @@ class AuthProvider with ChangeNotifier {
       required double longitude}) async {
     User? user = FirebaseAuth.instance.currentUser;
     DocumentReference vendor =
-        FirebaseFirestore.instance.collection('vendor').doc(user?.uid);
+        FirebaseFirestore.instance.collection('vendor').doc(shopName);
 
     vendor.set({
       'uid': user?.uid,
