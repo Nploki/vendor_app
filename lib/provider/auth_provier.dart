@@ -1,13 +1,14 @@
 // auth_provider.dart
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:get/route_manager.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:vendor_side_app/helper/helper.dart';
 
 class AuthProvider with ChangeNotifier {
   String error = '';
@@ -29,59 +30,91 @@ class AuthProvider with ChangeNotifier {
       return userCredential;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
-        this.error = 'Password is too weak';
+        error = 'Password is too weak';
         notifyListeners();
         print('Password is too weak');
       } else if (e.code == 'email-already-in-use') {
-        this.error = 'This email account already exists.';
+        error = 'This email account already exists.';
         notifyListeners();
         print('This email account already exists.');
       }
-      throw e;
+      rethrow;
     } catch (e) {
-      this.error = e.toString();
+      error = e.toString();
       notifyListeners();
       print(e);
-      throw e;
+      rethrow;
     }
   }
 
   Future<Map<String, dynamic>> uploadFile(File file, String storagePath) async {
     try {
-      FirebaseStorage _storage = FirebaseStorage.instance;
-      await _storage.ref(storagePath).putFile(file);
-      String downloadURL = await _storage.ref(storagePath).getDownloadURL();
+      FirebaseStorage storage = FirebaseStorage.instance;
+      await storage.ref(storagePath).putFile(file);
+      String downloadURL = await storage.ref(storagePath).getDownloadURL();
       bool isPicAvail = true;
       return {"isPicAvail": isPicAvail, "downloadURL": downloadURL};
     } on FirebaseException catch (e) {
       print(e.code);
-      throw e; // Rethrow to handle the error in the calling function
+      rethrow; // Rethrow to handle the error in the calling function
+    }
+  }
+
+  Future<void> checkLocationPermission() async {
+    final PermissionStatus locationPermissionStatus =
+        await Permission.location.request();
+
+    switch (locationPermissionStatus) {
+      case PermissionStatus.granted:
+        break;
+      case PermissionStatus.limited:
+        break;
+      default:
+        await Helper.commonPopUpDialog(
+          title: "Turn on location permission",
+          message: "To use this app, please provide location permission.",
+          primaryButtonName: "Open settings",
+          primaryButtonAction: () {
+            Get.back(); // Close the dialog
+            openAppSettings();
+          },
+        );
+        throw Exception("Location Permission denied");
+    }
+  }
+
+  Future<bool> checkLocationServiceEnable() async {
+    try {
+      return await Geolocator.isLocationServiceEnabled();
+    } catch (e) {
+      throw Exception('Please enable location services.');
     }
   }
 
   Future<Position> determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+    try {
+      bool isLocationServiceEnabled;
 
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
+      isLocationServiceEnabled = await checkLocationServiceEnable();
+      if (!isLocationServiceEnabled) {
+        await Helper.commonPopUpDialog(
+          title: "Enable Location",
+          message: "To use this app, please enable location services.",
+          primaryButtonName: "Open settings",
+          primaryButtonAction: () {
+            Get.back(); // Close the dialog
+            openAppSettings();
+          },
+        );
+        throw Exception('Please enable location services.');
       }
-    }
 
-    if (permission == LocationPermission.deniedForever) {
-      return Future.error(
-          'Location permissions are permanently denied, we cannot request permissions.');
-    }
+      await checkLocationPermission();
 
-    return await Geolocator.getCurrentPosition();
+      return await Geolocator.getCurrentPosition();
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> savaVendorDataOnDb(
@@ -92,10 +125,10 @@ class AuthProvider with ChangeNotifier {
       required double latitude,
       required double longitude}) async {
     User? user = FirebaseAuth.instance.currentUser;
-    DocumentReference _vendor =
+    DocumentReference vendor =
         FirebaseFirestore.instance.collection('vendor').doc(user?.uid);
 
-    _vendor.set({
+    vendor.set({
       'uid': user?.uid,
       'ShopName': shopName,
       'ShopNo': shopno,
@@ -109,6 +142,6 @@ class AuthProvider with ChangeNotifier {
       'isTopPicked': true,
       'ImageUrl': url,
     });
-    return null;
+    return;
   }
 }
